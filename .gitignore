@@ -1,0 +1,8 @@
+.vscode
+
+stats
+data
+logs
+
+.python-version
+__pycache__
