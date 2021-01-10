@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 from scipy import linalg
+from tqdm import tqdm
 from torch.nn.functional import adaptive_avg_pool2d
-from tqdm import trange
 
 from .inception import InceptionV3
 
@@ -61,63 +61,6 @@ def sqrt_newton_schulz(A, numIters, dtype=None):
             Z = T.bmm(Z)
         sA = Y*torch.sqrt(normA).view(batchSize, 1, 1).expand_as(A)
     return sA
-
-
-def get_activations(images, model, batch_size=50, use_torch=False,
-                    verbose=False):
-    """Calculates the activations of the pool_3 layer for all images.
-
-    Params:
-    -- images      : List of image
-    -- model       : Instance of inception model
-    -- batch_size  : Batch size of images for the model to process at once.
-                     Make sure that the number of samples is a multiple of
-                     the batch size, otherwise some samples are ignored. This
-                     behavior is retained to match the original FID score
-                     implementation.
-    -- verbose     : If set to True and parameter out_step is given, the number
-                     of calculated batches is reported.
-    Returns:
-    -- A numpy array of dimension (num images, DIM) that contains the
-       activations of the given tensor when feeding inception with the
-       query tensor.
-    """
-    model.eval()
-
-    if batch_size > len(images):
-        print(('Warning: batch size is bigger than the data size. '
-               'Setting batch size to data size'))
-        batch_size = len(images)
-
-    if use_torch:
-        acts = torch.empty((len(images), DIM)).to(device)
-    else:
-        acts = np.empty((len(images), DIM))
-
-    iterator = trange(
-        0, len(images), batch_size, dynamic_ncols=True, leave=False,
-        disable=not verbose, desc="get_activations")
-
-    for start in iterator:
-        end = start + batch_size
-        batch_images = images[start: end]
-
-        batch_images = torch.from_numpy(batch_images).type(torch.FloatTensor)
-        batch_images = batch_images.to(device)
-        with torch.no_grad():
-            pred = model(batch_images)[0]
-
-        # If model output is not scalar, apply global spatial average pooling.
-        # This happens if you choose a dimensionality not equal DIM.
-        if len(pred.shape) != 2 and (pred.size(2) != 1 or pred.size(3) != 1):
-            pred = adaptive_avg_pool2d(pred, output_size=(1, 1))
-
-        if use_torch:
-            acts[start:end] = pred.view(pred.size(0), -1)
-        else:
-            acts[start:end] = pred.cpu().data.numpy().reshape(pred.size(0), -1)
-
-    return acts
 
 
 def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6,
@@ -199,30 +142,82 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6,
     return out
 
 
-def get_fid_score(images, stats_cache, batch_size=50, use_torch=False,
-                  verbose=False, parallel=False):
-    block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[DIM]
-    model = InceptionV3([block_idx]).to(device)
+def get_statistics(images, num_images=None, batch_size=50, use_torch=False,
+                   verbose=False, parallel=False):
+    """when `images` is a python generator, `num_images` should be given"""
+
+    if num_images is None:
+        try:
+            num_images = len(images)
+        except:
+            raise ValueError(
+                "when `images` is not a list like object (e.g. generator), "
+                "`num_images` should be given")
+
+    block_idx1 = InceptionV3.BLOCK_INDEX_BY_DIM[2048]
+    model = InceptionV3([block_idx1]).to(device)
+    model.eval()
 
     if parallel:
         model = torch.nn.DataParallel(model)
 
+    if use_torch:
+        fid_acts = torch.empty((num_images, 2048)).to(device)
+    else:
+        fid_acts = np.empty((num_images, 2048))
+
+    iterator = iter(tqdm(
+        images, total=num_images,
+        dynamic_ncols=True, leave=False, disable=not verbose,
+        desc="get_inception_and_fid_score"))
+
+    start = 0
+    while True:
+        batch_images = []
+        # get a batch of images from iterator
+        try:
+            for _ in range(batch_size):
+                batch_images.append(next(iterator))
+        except StopIteration:
+            if len(batch_images) == 0:
+                break
+            pass
+        batch_images = np.stack(batch_images, axis=0)
+        end = start + len(batch_images)
+
+        # calculate inception feature
+        batch_images = torch.from_numpy(batch_images).type(torch.FloatTensor)
+        batch_images = batch_images.to(device)
+        with torch.no_grad():
+            pred = model(batch_images)
+            if use_torch:
+                fid_acts[start: end] = pred[0].view(-1, 2048)
+            else:
+                fid_acts[start: end] = pred[0].view(-1, 2048).cpu().numpy()
+        start = end
+
+    if use_torch:
+        m1 = torch.mean(fid_acts, axis=0)
+        s1 = torch_cov(fid_acts, rowvar=False)
+    else:
+        m1 = np.mean(fid_acts, axis=0)
+        s1 = np.cov(fid_acts, rowvar=False)
+    return m1, s1
+
+
+def get_fid_score(stats_cache, images, num_images=None, batch_size=50,
+                  use_torch=False, verbose=False, parallel=False):
+    m1, s1 = get_statistics(
+        images, num_images, batch_size, use_torch, verbose, parallel)
+
     f = np.load(stats_cache)
     m2, s2 = f['mu'][:], f['sigma'][:]
     f.close()
-
-    acts = get_activations(images, model, batch_size, use_torch, verbose)
     if use_torch:
-        m1 = torch.mean(acts, axis=0)
-        s1 = torch_cov(acts, rowvar=False)
         m2 = torch.tensor(m2).to(m1.dtype)
         s2 = torch.tensor(s2).to(s1.dtype)
-    else:
-        m1 = np.mean(acts, axis=0)
-        s1 = np.cov(acts, rowvar=False)
     fid_value = calculate_frechet_distance(m1, s1, m2, s2, use_torch=use_torch)
 
     if use_torch:
         fid_value = fid_value.cpu().item()
-    del model
     return fid_value

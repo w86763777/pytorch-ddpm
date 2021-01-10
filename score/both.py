@@ -4,7 +4,7 @@ import types
 from tqdm import tqdm
 
 from .inception import InceptionV3
-from .fid_score import calculate_frechet_distance, torch_cov
+from .fid import calculate_frechet_distance, torch_cov
 
 
 device = torch.device('cuda:0')
