@@ -1,6 +1,7 @@
 absl-py==0.11.0
 scipy==1.5.4
 tensorflow==2.4.0
+tensorboardX==2.1
 torch==1.7.1
 torchvision==0.8.2
 tqdm==4.55.1

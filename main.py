@@ -105,6 +105,7 @@ def train():
         dataset, batch_size=FLAGS.batch_size, shuffle=True,
         num_workers=FLAGS.num_workers, drop_last=True)
     datalooper = infiniteloop(dataloader)
+
     # model setup
     net_model = UNet(
         T=FLAGS.T, ch=FLAGS.ch, ch_mult=FLAGS.ch_mult, attn=FLAGS.attn,
@@ -124,19 +125,24 @@ def train():
         trainer = torch.nn.DataParallel(trainer)
         net_sampler = torch.nn.DataParallel(net_sampler)
         ema_sampler = torch.nn.DataParallel(ema_sampler)
+
     # log setup
     os.makedirs(os.path.join(FLAGS.logdir, 'sample'))
-    writer = SummaryWriter(FLAGS.logdir)
     x_T = torch.randn(FLAGS.sample_size, 3, FLAGS.img_size, FLAGS.img_size)
     x_T = x_T.to(device)
     grid = (make_grid(next(iter(dataloader))[0][:FLAGS.sample_size]) + 1) / 2
+    writer = SummaryWriter(FLAGS.logdir)
     writer.add_image('real_sample', grid)
     writer.flush()
+    # backup all arguments
+    with open(os.path.join(FLAGS.logdir, "flagfile.txt"), 'w') as f:
+        f.write(FLAGS.flags_into_string())
     # show model size
     model_size = 0
     for param in net_model.parameters():
         model_size += param.data.nelement()
     print('Model params: %.2f M' % (model_size / 1024 / 1024))
+
     # start training
     with trange(FLAGS.total_steps, dynamic_ncols=True) as pbar:
         for step in pbar:
@@ -213,6 +219,8 @@ def eval():
         mean_type=FLAGS.mean_type, var_type=FLAGS.var_type).to(device)
     if FLAGS.parallel:
         sampler = torch.nn.DataParallel(sampler)
+
+    # load model and evaluate
     ckpt = torch.load(os.path.join(FLAGS.logdir, 'ckpt.pt'))
     model.load_state_dict(ckpt['net_model'])
     (IS, IS_std), FID = evaluate(sampler, model)
