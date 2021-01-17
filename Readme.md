@@ -16,7 +16,7 @@ implementation details.
     - [ ] Gradient accumulation
     - [x] Multi-GPU training
 - Reproducing Experiment
-    - [ ] CIFAR10
+    - [x] CIFAR10
 
 ## Requirements
 - Python 3.6
@@ -64,20 +64,26 @@ implementation details.
 - A `flagfile.txt` is autosaved to your log directory. The default logdir for `config/CIFAR10.txt` is `./logs/DDPM_CIFAR10_EPS`
 - Start evaluation
     ```
-    python main.py --eval \
-        --flagfile ./logs/DDPM_CIFAR10_EPS/flagfile.txt
+    python main.py \
+        --flagfile ./logs/DDPM_CIFAR10_EPS/flagfile.txt \
+        --notrain \
+        --eval
     ```
 - [Optional] Multi-GPU evaluation
     ```
-    CUDA_VISIBLE_DEVICES=0,1,2,3 python main.py --eval \
+    CUDA_VISIBLE_DEVICES=0,1,2,3 python main.py 
         --flagfile ./logs/DDPM_CIFAR10_EPS/flagfile.txt \
+        --notrain \
+        --eval \
         --parallel
     ```
 
 
 ## Reproducing Experiment
 
-Work in progress.
+### CIFAR10
+- FID: 3.249, Inception Score: 9.475(0.174)
+![](./images/cifar10_samples.png)
 
 ## Reference
 

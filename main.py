@@ -89,7 +89,7 @@ def evaluate(sampler, model):
     (IS, IS_std), FID = get_inception_and_fid_score(
         images, FLAGS.fid_cache, num_images=FLAGS.num_images,
         use_torch=FLAGS.fid_use_torch, verbose=True)
-    return (IS, IS_std), FID
+    return (IS, IS_std), FID, images
 
 
 def train():
@@ -187,8 +187,8 @@ def train():
 
             # evaluate
             if FLAGS.eval_step > 0 and step % FLAGS.eval_step == 0:
-                net_IS, net_FID = evaluate(net_sampler, net_model)
-                ema_IS, ema_FID = evaluate(ema_sampler, ema_model)
+                net_IS, net_FID, _ = evaluate(net_sampler, net_model)
+                ema_IS, ema_FID, _ = evaluate(ema_sampler, ema_model)
                 metrics = {
                     'IS': net_IS[0],
                     'IS_std': net_IS[1],
@@ -223,12 +223,20 @@ def eval():
     # load model and evaluate
     ckpt = torch.load(os.path.join(FLAGS.logdir, 'ckpt.pt'))
     model.load_state_dict(ckpt['net_model'])
-    (IS, IS_std), FID = evaluate(sampler, model)
+    (IS, IS_std), FID, samples = evaluate(sampler, model)
     print("Model     : IS:%6.3f(%.3f), FID:%7.3f" % (IS, IS_std, FID))
+    save_image(
+        torch.tensor(samples[:256]),
+        os.path.join(FLAGS.logdir, 'samples.png'),
+        nrow=16)
 
     model.load_state_dict(ckpt['ema_model'])
-    (IS, IS_std), FID = evaluate(sampler, model)
+    (IS, IS_std), FID, samples = evaluate(sampler, model)
     print("Model(EMA): IS:%6.3f(%.3f), FID:%7.3f" % (IS, IS_std, FID))
+    save_image(
+        torch.tensor(samples[:256]),
+        os.path.join(FLAGS.logdir, 'samples_ema.png'),
+        nrow=16)
 
 
 def main(argv):
