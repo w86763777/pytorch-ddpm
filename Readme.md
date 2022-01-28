@@ -27,12 +27,13 @@ implementation details.
     pip install -r requirements.txt
     ```
 - Download precalculated statistic for dataset:
-    - [CIFAR10 train 50k](https://drive.google.com/file/d/1j-oW5Hq-IvmoZZcHWJ-ipCE5XwalZLyJ/view?usp=sharing)
+
+    [cifar10.train.npz](https://drive.google.com/drive/folders/1UBdzl6GtNMwNQ5U-4ESlIer43tNjiGJC?usp=sharing)
     
-    Create folder `stats` and put downloaded `.npz` files in it
+    Create folder `stats` for `cifar10.train.npz`.
     ```
     stats
-    └── cifar10_train.npz
+    └── cifar10.train.npz
     ```
 
 ## Train From Scratch

@@ -50,7 +50,7 @@ flags.DEFINE_integer('save_step', 5000, help='frequency of saving checkpoints, 0
 flags.DEFINE_integer('eval_step', 0, help='frequency of evaluating model, 0 to disable during training')
 flags.DEFINE_integer('num_images', 50000, help='the number of generated images for evaluation')
 flags.DEFINE_bool('fid_use_torch', False, help='calculate IS and FID on gpu')
-flags.DEFINE_string('fid_cache', './stats/cifar10_train.npz', help='FID cache')
+flags.DEFINE_string('fid_cache', './stats/cifar10.train.npz', help='FID cache')
 
 device = torch.device('cuda:0')
 
