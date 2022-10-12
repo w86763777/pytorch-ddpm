@@ -18,7 +18,7 @@ from score.both import get_inception_and_fid_score
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool('train', False, help='train from scratch')
-flags.DEFINE_bool('eval', False, help='load model.pt and evaluate FID and IS')
+flags.DEFINE_bool('eval', False, help='load ckpt.pt and evaluate FID and IS')
 # UNet
 flags.DEFINE_integer('ch', 128, help='base channel of UNet')
 flags.DEFINE_multi_integer('ch_mult', [1, 2, 2, 2], help='channel multiplier')

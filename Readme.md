@@ -29,7 +29,7 @@ implementation details.
 - Download precalculated statistic for dataset:
 
     [cifar10.train.npz](https://drive.google.com/drive/folders/1UBdzl6GtNMwNQ5U-4ESlIer43tNjiGJC?usp=sharing)
-    
+
     Create folder `stats` for `cifar10.train.npz`.
     ```
     stats
@@ -72,7 +72,7 @@ implementation details.
     ```
 - [Optional] Multi-GPU evaluation
     ```
-    CUDA_VISIBLE_DEVICES=0,1,2,3 python main.py 
+    CUDA_VISIBLE_DEVICES=0,1,2,3 python main.py
         --flagfile ./logs/DDPM_CIFAR10_EPS/flagfile.txt \
         --notrain \
         --eval \
@@ -85,6 +85,8 @@ implementation details.
 ### CIFAR10
 - FID: 3.249, Inception Score: 9.475(0.174)
 ![](./images/cifar10_samples.png)
+
+The checkpoint can be downloaded from my [drive](https://drive.google.com/file/d/1IhdFcdNZJRosi3XRT7-qNmiPGTuyuEXr/view?usp=sharing).
 
 ## Reference
 
