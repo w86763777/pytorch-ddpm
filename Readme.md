@@ -72,7 +72,7 @@ implementation details.
     ```
 - [Optional] Multi-GPU evaluation
     ```
-    CUDA_VISIBLE_DEVICES=0,1,2,3 python main.py
+    CUDA_VISIBLE_DEVICES=0,1,2,3 python main.py \
         --flagfile ./logs/DDPM_CIFAR10_EPS/flagfile.txt \
         --notrain \
         --eval \
