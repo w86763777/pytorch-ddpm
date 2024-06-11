@@ -2,9 +2,9 @@ import copy
 import json
 import os
 import warnings
-from absl import app, flags
 
 import torch
+from absl import app, flags
 from tensorboardX import SummaryWriter
 from torchvision.datasets import CIFAR10
 from torchvision.utils import make_grid, save_image
@@ -222,13 +222,6 @@ def eval():
 
     # load model and evaluate
     ckpt = torch.load(os.path.join(FLAGS.logdir, 'ckpt.pt'))
-    model.load_state_dict(ckpt['net_model'])
-    (IS, IS_std), FID, samples = evaluate(sampler, model)
-    print("Model     : IS:%6.3f(%.3f), FID:%7.3f" % (IS, IS_std, FID))
-    save_image(
-        torch.tensor(samples[:256]),
-        os.path.join(FLAGS.logdir, 'samples.png'),
-        nrow=16)
 
     model.load_state_dict(ckpt['ema_model'])
     (IS, IS_std), FID, samples = evaluate(sampler, model)
