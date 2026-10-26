@@ -41,6 +41,7 @@ flags.DEFINE_integer('batch_size', 128, help='batch size')
 flags.DEFINE_integer('num_workers', 4, help='workers of Dataloader')
 flags.DEFINE_float('ema_decay', 0.9999, help="ema decay rate")
 flags.DEFINE_bool('parallel', False, help='multi gpu training')
+flags.DEFINE_bool('bf16', False, help='train with bfloat16 autocast')
 # Logging & Sampling
 flags.DEFINE_string('logdir', './logs/DDPM_CIFAR10_EPS', help='log directory')
 flags.DEFINE_integer('sample_size', 64, "sampling size of images")
@@ -149,7 +150,8 @@ def train():
             # train
             optim.zero_grad()
             x_0 = next(datalooper).to(device)
-            loss = trainer(x_0).mean()
+            with torch.autocast(device_type='cuda', dtype=torch.bfloat16, enabled=FLAGS.bf16):
+                loss = trainer(x_0).mean()
             loss.backward()
             torch.nn.utils.clip_grad_norm_(
                 net_model.parameters(), FLAGS.grad_clip)
